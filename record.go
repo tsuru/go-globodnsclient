@@ -18,12 +18,25 @@ import (
 type Record struct {
 	Content   string    `json:"content"`
 	Name      string    `json:"name"`
-	TTL       *int      `json:"ttl"`
+	TTL       *string   `json:"ttl"`
 	ID        int       `json:"id"`
 	DomainID  int       `json:"domain_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Type      string    `json:"-"`
+}
+
+func (r *Record) GetTTL() *int {
+	if r == nil || r.TTL == nil {
+		return nil
+	}
+
+	ttl, err := strconv.Atoi(*r.TTL)
+	if err != nil {
+		return nil
+	}
+
+	return &ttl
 }
 
 type RecordService interface {

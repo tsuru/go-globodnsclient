@@ -64,9 +64,9 @@ func TestClient_RecordList(t *testing.T) {
 
 				fmt.Fprintf(w, `[
 	{"a":   {"name": "www", "content": "169.196.100.100"}},
-	{"mx":  {"name": "@", "content": "mail", "ttl": 86400}},
+	{"mx":  {"name": "@", "content": "mail", "ttl": "86400"}},
 	{"a":   {"name": "mail", "content": "169.196.100.101"}},
-	{"txt": {"name": "@", "content": "my TXT record!!!", "ttl": 60}} ]`)
+	{"txt": {"name": "@", "content": "my TXT record!!!", "ttl": "60"}} ]`)
 			},
 			domainID: 10,
 			params: &globodns.ListRecordsParameters{
@@ -77,9 +77,9 @@ func TestClient_RecordList(t *testing.T) {
 			},
 			expected: []globodns.Record{
 				{Name: "www", Content: "169.196.100.100", Type: "A"},
-				{Name: "@", Content: "mail", TTL: func(n int) *int { return &n }(86400), Type: "MX"},
+				{Name: "@", Content: "mail", TTL: globodns.StringPointer("86400"), Type: "MX"},
 				{Name: "mail", Content: "169.196.100.101", Type: "A"},
-				{Name: "@", Content: "my TXT record!!!", TTL: func(n int) *int { return &n }(60), Type: "TXT"},
+				{Name: "@", Content: "my TXT record!!!", TTL: globodns.StringPointer("60"), Type: "TXT"},
 			},
 		},
 
@@ -97,7 +97,7 @@ func TestClient_RecordList(t *testing.T) {
 
 				if count == 1 {
 					assert.Equal(t, "2", r.URL.Query().Get("page"))
-					fmt.Fprintf(w, `[{"mx":  {"name": "@", "content": "mail", "ttl": 86400}}]`)
+					fmt.Fprintf(w, `[{"mx":  {"name": "@", "content": "mail", "ttl": "86400"}}]`)
 					return
 				}
 
@@ -109,7 +109,7 @@ func TestClient_RecordList(t *testing.T) {
 
 				if count == 3 {
 					assert.Equal(t, "4", r.URL.Query().Get("page"))
-					fmt.Fprintf(w, `[{"txt": {"name": "@", "content": "my TXT record!!!", "ttl": 60}}]`)
+					fmt.Fprintf(w, `[{"txt": {"name": "@", "content": "my TXT record!!!", "ttl": "60"}}]`)
 					return
 				}
 
@@ -124,9 +124,9 @@ func TestClient_RecordList(t *testing.T) {
 			params: &globodns.ListRecordsParameters{PerPage: 1},
 			expected: []globodns.Record{
 				{Name: "www", Content: "169.196.100.100", Type: "A"},
-				{Name: "@", Content: "mail", TTL: func(n int) *int { return &n }(86400), Type: "MX"},
+				{Name: "@", Content: "mail", TTL: globodns.StringPointer("86400"), Type: "MX"},
 				{Name: "mail", Content: "169.196.100.101", Type: "A"},
-				{Name: "@", Content: "my TXT record!!!", TTL: func(n int) *int { return &n }(60), Type: "TXT"},
+				{Name: "@", Content: "my TXT record!!!", TTL: globodns.StringPointer("60"), Type: "TXT"},
 			},
 		},
 	}

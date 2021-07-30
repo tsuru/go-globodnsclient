@@ -11,9 +11,13 @@ func IntPointer(n int) *int { return &n }
 func StringPointer(s string) *string { return &s }
 
 func TTL(r Record, d Domain) int {
-	if r.TTL != nil {
-		return *r.TTL
+	if ttl := r.GetTTL(); ttl != nil {
+		return *ttl
 	}
 
-	return d.TTL
+	if ttl := d.GetTTL(); ttl != nil {
+		return *ttl
+	}
+
+	return 0
 }

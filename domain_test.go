@@ -55,7 +55,7 @@ func TestClient_DomainList(t *testing.T) {
 					"view":     []string{"all"},
 				}, r.URL.Query())
 
-				fmt.Fprintf(w, `[{"domain": {"id": 1, "name": "internal.example.com", "ttl": 1080, "authority_type": "M", "addressing_type": "M", "view_id": 10, "notes": "some note"}}]`)
+				fmt.Fprintf(w, `[{"domain": {"id": 1, "name": "internal.example.com", "ttl": "1080", "authority_type": "M", "addressing_type": "M", "view_id": 10, "notes": "some note"}}]`)
 			},
 			parameters: &globodns.ListDomainsParameters{
 				Query:   "*.example.com",
@@ -68,11 +68,11 @@ func TestClient_DomainList(t *testing.T) {
 				{
 					ID:             1,
 					Name:           "internal.example.com",
-					TTL:            1080,
+					TTL:            globodns.StringPointer("1080"),
 					AuthorityType:  "M",
 					AddressingType: "M",
 					ViewID:         10,
-					Notes:          func(s string) *string { return &s }("some note"),
+					Notes:          globodns.StringPointer("some note"),
 				},
 			},
 		},
@@ -85,13 +85,13 @@ func TestClient_DomainList(t *testing.T) {
 
 				if count == 0 {
 					assert.Equal(t, "1", r.URL.Query().Get("page"))
-					fmt.Fprintf(w, `[{"domain": {"id": 1, "name": "example.com", "ttl": 1080}}]`)
+					fmt.Fprintf(w, `[{"domain": {"id": 1, "name": "example.com", "ttl": "1080"}}]`)
 					return
 				}
 
 				if count == 1 {
 					assert.Equal(t, "2", r.URL.Query().Get("page"))
-					fmt.Fprintf(w, `[{"domain": {"id": 2, "name": "example.test", "ttl": 1080}}]`)
+					fmt.Fprintf(w, `[{"domain": {"id": 2, "name": "example.test"}}]`)
 					return
 				}
 
@@ -104,8 +104,8 @@ func TestClient_DomainList(t *testing.T) {
 			},
 			parameters: &globodns.ListDomainsParameters{PerPage: 1},
 			expected: []globodns.Domain{
-				{ID: 1, Name: "example.com", TTL: 1080},
-				{ID: 2, Name: "example.test", TTL: 1080},
+				{ID: 1, Name: "example.com", TTL: globodns.StringPointer("1080")},
+				{ID: 2, Name: "example.test"},
 			},
 		},
 	}

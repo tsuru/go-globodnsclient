@@ -18,9 +18,22 @@ type Domain struct {
 	AuthorityType  string  `json:"authority_type"`
 	AddressingType string  `json:"addressing_type"`
 	Notes          *string `json:"notes"`
+	TTL            *string `json:"ttl"`
 	ID             int     `json:"id"`
-	TTL            int     `json:"ttl"`
 	ViewID         int     `json:"view_id"`
+}
+
+func (d *Domain) GetTTL() *int {
+	if d == nil || d.TTL == nil {
+		return nil
+	}
+
+	ttl, err := strconv.Atoi(*d.TTL)
+	if err != nil {
+		return nil
+	}
+
+	return &ttl
 }
 
 type ListDomainsParameters struct {
