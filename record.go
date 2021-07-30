@@ -5,6 +5,7 @@
 package globodns
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,14 +17,14 @@ import (
 )
 
 type Record struct {
-	Content   string    `json:"content"`
-	Name      string    `json:"name"`
-	TTL       *string   `json:"ttl"`
-	ID        int       `json:"id"`
-	DomainID  int       `json:"domain_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Type      string    `json:"-"`
+	Content   string     `json:"content"`
+	Name      string     `json:"name"`
+	Type      string     `json:"type"`
+	TTL       *string    `json:"ttl"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	ID        int        `json:"id,omitempty"`
+	DomainID  int        `json:"domain_id"`
 }
 
 func (r *Record) GetTTL() *int {
@@ -40,6 +41,7 @@ func (r *Record) GetTTL() *int {
 }
 
 type RecordService interface {
+	Create(ctx context.Context, r Record) (*Record, error)
 	List(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error)
 }
 
@@ -47,6 +49,54 @@ var _ RecordService = &recordService{}
 
 type recordService struct {
 	*Client
+}
+
+func (s *recordService) Create(ctx context.Context, r Record) (*Record, error) {
+	if r.DomainID < 0 {
+		return nil, fmt.Errorf("globodns: domain ID cannot be negative")
+	}
+
+	return s.create(ctx, r)
+}
+
+func (s *recordService) create(ctx context.Context, r Record) (*Record, error) {
+	var body bytes.Buffer
+
+	data := map[string]Record{"record": r}
+
+	if err := json.NewEncoder(&body).Encode(&data); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf("/domains/%d/records.json", r.DomainID)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", s.makeURL(path), &body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := s.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var got map[string]Record
+
+	if err = json.NewDecoder(res.Body).Decode(&got); err != nil {
+		return nil, err
+	}
+
+	for rtype, r := range got {
+		if r.Type == "" {
+			r.Type = strings.ToUpper(rtype)
+		}
+
+		return &r, nil
+	}
+
+	return nil, fmt.Errorf("globodns: no record found")
 }
 
 type ListRecordsParameters struct {

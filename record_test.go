@@ -6,11 +6,14 @@ package globodns_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -142,6 +145,106 @@ func TestClient_RecordList(t *testing.T) {
 			require.NoError(t, err)
 
 			got, err := client.Record.List(context.TODO(), tt.domainID, tt.params)
+			if tt.expectedError != "" {
+				assert.EqualError(t, err, tt.expectedError)
+				return
+			}
+
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestClient_RecordCreate(t *testing.T) {
+	tests := map[string]struct {
+		handler       http.HandlerFunc
+		record        globodns.Record
+		expected      *globodns.Record
+		expectedError string
+	}{
+		"domain id < 0": {
+			record:        globodns.Record{DomainID: -100},
+			expectedError: "globodns: domain ID cannot be negative",
+		},
+
+		"when server returns error": {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "POST", r.Method)
+				assert.Equal(t, "/domains/100/records.json", r.URL.Path)
+
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "some error")
+			},
+			record:        globodns.Record{DomainID: 100},
+			expectedError: `globodns: unexpected HTTP status code: Code: 500 Body: some error`,
+		},
+
+		"creating record as expected": {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "POST", r.Method)
+				assert.Equal(t, "/domains/100/records.json", r.URL.Path)
+
+				body, err := ioutil.ReadAll(r.Body)
+				require.NoError(t, err)
+
+				var data map[string]interface{}
+				err = json.Unmarshal(body, &data)
+				require.NoError(t, err)
+
+				assert.Equal(t, map[string]interface{}{
+					"record": map[string]interface{}{
+						"type":      "A",
+						"name":      "www.tsuru",
+						"content":   "169.196.100.100",
+						"ttl":       "3600",
+						"domain_id": float64(100),
+					},
+				}, data)
+
+				err = json.NewEncoder(w).Encode(map[string]interface{}{
+					"a": map[string]interface{}{
+						"id":         99999,
+						"type":       "A",
+						"name":       "www.tsuru",
+						"content":    "169.196.100.100",
+						"ttl":        "3600",
+						"domain_id":  float64(100),
+						"created_at": "2021-01-01T00:00:00Z",
+						"updated_at": "2021-01-01T00:00:00Z",
+					},
+				})
+				require.NoError(t, err)
+				w.WriteHeader(http.StatusCreated)
+			},
+			record: globodns.Record{
+				Type:     "A",
+				Name:     "www.tsuru",
+				Content:  "169.196.100.100",
+				TTL:      globodns.StringPointer("3600"),
+				DomainID: 100,
+			},
+			expected: &globodns.Record{
+				ID:        99999,
+				Type:      "A",
+				Name:      "www.tsuru",
+				Content:   "169.196.100.100",
+				TTL:       globodns.StringPointer("3600"),
+				DomainID:  100,
+				CreatedAt: globodns.TimePointer(time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)),
+				UpdatedAt: globodns.TimePointer(time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)),
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			client, err := globodns.New(nil, server.URL)
+			require.NoError(t, err)
+
+			got, err := client.Record.Create(context.TODO(), tt.record)
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 				return

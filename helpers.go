@@ -4,11 +4,15 @@
 
 package globodns
 
+import "time"
+
 func BoolPointer(b bool) *bool { return &b }
 
 func IntPointer(n int) *int { return &n }
 
 func StringPointer(s string) *string { return &s }
+
+func TimePointer(t time.Time) *time.Time { return &t }
 
 func TTL(r Record, d Domain) int {
 	if ttl := r.GetTTL(); ttl != nil {
