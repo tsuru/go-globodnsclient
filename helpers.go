@@ -9,3 +9,11 @@ func BoolPointer(b bool) *bool { return &b }
 func IntPointer(n int) *int { return &n }
 
 func StringPointer(s string) *string { return &s }
+
+func TTL(r Record, d Domain) int {
+	if r.TTL != nil {
+		return *r.TTL
+	}
+
+	return d.TTL
+}
