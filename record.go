@@ -27,7 +27,7 @@ type Record struct {
 }
 
 type RecordService interface {
-	List(ctx context.Context, domainID int, p *ListRecordParameters) ([]Record, error)
+	List(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error)
 }
 
 var _ RecordService = &recordService{}
@@ -36,14 +36,18 @@ type recordService struct {
 	*Client
 }
 
-type ListRecordParameters struct {
+type ListRecordsParameters struct {
 	Reverse *bool
 	Query   string
 	PerPage int
 	Page    int
 }
 
-func (p *ListRecordParameters) Validate() error {
+func (p *ListRecordsParameters) Validate() error {
+	if p == nil {
+		return nil
+	}
+
 	if p.Page < 0 {
 		return fmt.Errorf("globodns: page cannot be negative")
 	}
@@ -55,7 +59,11 @@ func (p *ListRecordParameters) Validate() error {
 	return nil
 }
 
-func (p *ListRecordParameters) AsURLValues() url.Values {
+func (p *ListRecordsParameters) AsURLValues() url.Values {
+	if p == nil {
+		return nil
+	}
+
 	data := make(url.Values)
 
 	if p.Page != 0 {
@@ -77,17 +85,17 @@ func (p *ListRecordParameters) AsURLValues() url.Values {
 	return data
 }
 
-func (s *recordService) List(ctx context.Context, domainID int, p *ListRecordParameters) ([]Record, error) {
+func (s *recordService) List(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error) {
 	if domainID < 0 {
 		return nil, fmt.Errorf("globodns: domain ID cannot be negative")
 	}
 
-	if p == nil {
-		p = new(ListRecordParameters)
-	}
-
 	if err := p.Validate(); err != nil {
 		return nil, err
+	}
+
+	if p == nil {
+		p = &ListRecordsParameters{}
 	}
 
 	if p.Page != 0 {
@@ -97,7 +105,7 @@ func (s *recordService) List(ctx context.Context, domainID int, p *ListRecordPar
 	return s.listAll(ctx, domainID, p)
 }
 
-func (s *recordService) listAll(ctx context.Context, domainID int, p *ListRecordParameters) ([]Record, error) {
+func (s *recordService) listAll(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error) {
 	var records []Record
 
 	for page := 1; ; page++ {
@@ -118,7 +126,7 @@ func (s *recordService) listAll(ctx context.Context, domainID int, p *ListRecord
 	return records, nil
 }
 
-func (s *recordService) list(ctx context.Context, domainID int, p *ListRecordParameters) ([]Record, error) {
+func (s *recordService) list(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error) {
 	path := fmt.Sprintf("/domains/%d?%s", domainID, p.AsURLValues().Encode())
 
 	req, err := http.NewRequestWithContext(ctx, "GET", s.makeURL(path), nil)

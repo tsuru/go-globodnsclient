@@ -24,7 +24,7 @@ func TestClient_RecordList(t *testing.T) {
 	tests := map[string]struct {
 		handler       http.HandlerFunc
 		domainID      int
-		params        *globodns.ListRecordParameters
+		params        *globodns.ListRecordsParameters
 		expected      []globodns.Record
 		expectedError string
 	}{
@@ -34,18 +34,14 @@ func TestClient_RecordList(t *testing.T) {
 		},
 
 		"records per page < 0": {
-			domainID: 10,
-			params: &globodns.ListRecordParameters{
-				PerPage: -10,
-			},
+			domainID:      10,
+			params:        &globodns.ListRecordsParameters{PerPage: -10},
 			expectedError: "globodns: records per page cannot be negative",
 		},
 
 		"page < 0": {
-			domainID: 10,
-			params: &globodns.ListRecordParameters{
-				Page: -10,
-			},
+			domainID:      10,
+			params:        &globodns.ListRecordsParameters{Page: -10},
 			expectedError: "globodns: page cannot be negative",
 		},
 
@@ -73,7 +69,7 @@ func TestClient_RecordList(t *testing.T) {
 	{"txt": {"name": "@", "content": "my TXT record!!!", "ttl": 60}} ]`)
 			},
 			domainID: 10,
-			params: &globodns.ListRecordParameters{
+			params: &globodns.ListRecordsParameters{
 				Page:    100,
 				PerPage: 25,
 				Query:   "*",
@@ -125,9 +121,7 @@ func TestClient_RecordList(t *testing.T) {
 
 				require.Fail(t, "should not pass here")
 			},
-			params: &globodns.ListRecordParameters{
-				PerPage: 1,
-			},
+			params: &globodns.ListRecordsParameters{PerPage: 1},
 			expected: []globodns.Record{
 				{Name: "www", Content: "169.196.100.100", Type: "A"},
 				{Name: "@", Content: "mail", TTL: func(n int) *int { return &n }(86400), Type: "MX"},
