@@ -75,16 +75,10 @@ func (s *recordService) create(ctx context.Context, r Record) (*Record, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := s.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
 	var got map[string]Record
 
-	if err = json.NewDecoder(res.Body).Decode(&got); err != nil {
+	_, err = s.Do(req, &got)
+	if err != nil {
 		return nil, err
 	}
 
@@ -197,20 +191,15 @@ func (s *recordService) list(ctx context.Context, domainID int, p *ListRecordsPa
 		return nil, err
 	}
 
-	res, err := s.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	var got []map[string]Record
 
-	var ss []map[string]Record
-
-	err = json.NewDecoder(res.Body).Decode(&ss)
+	_, err = s.Do(req, &got)
 	if err != nil {
 		return nil, err
 	}
 
 	var records []Record
-	for _, r := range ss {
+	for _, r := range got {
 		for rtype, record := range r {
 			record.Type = strings.ToUpper(rtype)
 			records = append(records, record)

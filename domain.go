@@ -6,7 +6,6 @@ package globodns
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -148,22 +147,17 @@ func (d *domainService) list(ctx context.Context, p *ListDomainsParameters) ([]D
 		return nil, err
 	}
 
-	res, err := d.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	var ss []struct {
+	var got []struct {
 		Domain Domain `json:"domain"`
 	}
 
-	err = json.NewDecoder(res.Body).Decode(&ss)
+	_, err = d.Do(req, &got)
 	if err != nil {
 		return nil, err
 	}
 
 	var domains []Domain
-	for _, s := range ss {
+	for _, s := range got {
 		domains = append(domains, s.Domain)
 	}
 

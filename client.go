@@ -5,6 +5,7 @@
 package globodns
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -49,9 +50,15 @@ func (c *Client) SetToken(token string) {
 	c.token = token
 }
 
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
+func (c *Client) Do(req *http.Request, out interface{}) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("globodns: HTTP request cannot be nil")
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	if req.Method != "GET" && req.Method != "HEAD" {
+		req.Header.Set("Content-Type", "application/json")
 	}
 
 	if c.token != "" {
@@ -62,12 +69,17 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if err = checkResponse(res); err != nil {
 		return res, err
 	}
 
-	return res, err
+	if err = json.NewDecoder(res.Body).Decode(out); err != nil {
+		return res, fmt.Errorf("globodns: failed to decode JSON object: %w", err)
+	}
+
+	return res, nil
 }
 
 func (c *Client) makeURL(path string) string {
