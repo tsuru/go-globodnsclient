@@ -15,12 +15,12 @@ import (
 
 type Domain struct {
 	Name           string  `json:"name"`
-	TTL            string  `json:"ttl"`
 	AuthorityType  string  `json:"authority_type"`
 	AddressingType string  `json:"addressing_type"`
 	Notes          *string `json:"notes"`
-	ViewID         int     `json:"view_id"`
 	ID             int     `json:"id"`
+	TTL            int     `json:"ttl"`
+	ViewID         int     `json:"view_id"`
 }
 
 type ListDomainRequest struct {
