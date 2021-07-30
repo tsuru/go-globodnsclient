@@ -18,7 +18,9 @@ type Client struct {
 	client  *http.Client
 	baseURL string
 	token   string
-	Domain  DomainService
+
+	Domain DomainService
+	Record RecordService
 }
 
 func New(cli *http.Client, url string) (*Client, error) {
@@ -36,6 +38,7 @@ func New(cli *http.Client, url string) (*Client, error) {
 	}
 
 	c.Domain = &domainService{Client: c}
+	c.Record = &recordService{Client: c}
 
 	return c, nil
 }
