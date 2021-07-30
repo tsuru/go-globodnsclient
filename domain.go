@@ -23,42 +23,61 @@ type Domain struct {
 	ViewID         int     `json:"view_id"`
 }
 
-type ListDomainRequest struct {
-	Query          string
-	View           string
-	DomainsPerPage int
-	Page           int
-	Reverse        *bool
+type ListDomainsParameters struct {
+	Query   string
+	View    string
+	Reverse *bool
+	Page    int
+	PerPage int
 }
 
-func (r *ListDomainRequest) AsURLValues() url.Values {
+func (p *ListDomainsParameters) Validate() error {
+	if p == nil {
+		return nil
+	}
+
+	if p.Page < 0 {
+		return fmt.Errorf("globodns: page cannot be negative")
+	}
+
+	if p.PerPage < 0 {
+		return fmt.Errorf("globodns: domains per page cannot be negative")
+	}
+
+	return nil
+}
+
+func (p *ListDomainsParameters) AsURLValues() url.Values {
+	if p == nil {
+		return nil
+	}
+
 	data := make(url.Values)
-
-	if r.Page != 0 {
-		data.Set("page", strconv.Itoa(r.Page))
+	if p.Page != 0 {
+		data.Set("page", strconv.Itoa(p.Page))
 	}
 
-	if r.DomainsPerPage != 0 {
-		data.Set("per_page", strconv.Itoa(r.DomainsPerPage))
+	if p.PerPage != 0 {
+		data.Set("per_page", strconv.Itoa(p.PerPage))
 	}
 
-	if r.Query != "" {
-		data.Set("query", r.Query)
+	if p.Query != "" {
+		data.Set("query", p.Query)
 	}
 
-	if r.Reverse != nil {
-		data.Set("reverse", strconv.FormatBool(*r.Reverse))
+	if p.Reverse != nil {
+		data.Set("reverse", strconv.FormatBool(*p.Reverse))
 	}
 
-	if r.View != "" {
-		data.Set("view", r.View)
+	if p.View != "" {
+		data.Set("view", p.View)
 	}
 
 	return data
 }
 
 type DomainService interface {
-	List(ctx context.Context, r ListDomainRequest) ([]Domain, error)
+	List(ctx context.Context, p *ListDomainsParameters) ([]Domain, error)
 }
 
 var _ DomainService = &domainService{}
@@ -71,29 +90,29 @@ type domainService struct {
 	*Client
 }
 
-func (d *domainService) List(ctx context.Context, r ListDomainRequest) ([]Domain, error) {
-	if r.Page < 0 {
-		return nil, fmt.Errorf("globodns: page cannot be negative")
+func (d *domainService) List(ctx context.Context, p *ListDomainsParameters) ([]Domain, error) {
+	if err := p.Validate(); err != nil {
+		return nil, err
 	}
 
-	if r.DomainsPerPage < 0 {
-		return nil, fmt.Errorf("globodns: domains per page cannot be negative")
+	if p == nil {
+		p = &ListDomainsParameters{}
 	}
 
-	if r.Page != 0 {
-		return d.list(ctx, r)
+	if p.Page != 0 {
+		return d.list(ctx, p)
 	}
 
-	return d.listAll(ctx, r)
+	return d.listAll(ctx, p)
 }
 
-func (d *domainService) listAll(ctx context.Context, r ListDomainRequest) ([]Domain, error) {
+func (d *domainService) listAll(ctx context.Context, p *ListDomainsParameters) ([]Domain, error) {
 	var domains []Domain
 
 	for page := 1; ; page++ {
-		r.Page = page
+		p.Page = page
 
-		ds, err := d.list(ctx, r)
+		ds, err := d.list(ctx, p)
 		if err != nil {
 			return nil, err
 		}
@@ -108,8 +127,8 @@ func (d *domainService) listAll(ctx context.Context, r ListDomainRequest) ([]Dom
 	return domains, nil
 }
 
-func (d *domainService) list(ctx context.Context, r ListDomainRequest) ([]Domain, error) {
-	path := fmt.Sprintf("/domains?%s", r.AsURLValues().Encode())
+func (d *domainService) list(ctx context.Context, p *ListDomainsParameters) ([]Domain, error) {
+	path := fmt.Sprintf("/domains?%s", p.AsURLValues().Encode())
 
 	req, err := http.NewRequestWithContext(ctx, "GET", d.makeURL(path), nil)
 	if err != nil {

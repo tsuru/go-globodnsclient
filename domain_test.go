@@ -23,21 +23,17 @@ func TestClient_DomainList(t *testing.T) {
 
 	tests := map[string]struct {
 		handler       http.HandlerFunc
-		parameters    globodns.ListDomainRequest
+		parameters    *globodns.ListDomainsParameters
 		expected      []globodns.Domain
 		expectedError string
 	}{
 		"domain per page < 0": {
-			parameters: globodns.ListDomainRequest{
-				DomainsPerPage: -1,
-			},
+			parameters:    &globodns.ListDomainsParameters{PerPage: -1},
 			expectedError: "globodns: domains per page cannot be negative",
 		},
 
 		"page < 0": {
-			parameters: globodns.ListDomainRequest{
-				Page: -100,
-			},
+			parameters:    &globodns.ListDomainsParameters{Page: -100},
 			expectedError: "globodns: page cannot be negative",
 		},
 
@@ -61,12 +57,12 @@ func TestClient_DomainList(t *testing.T) {
 
 				fmt.Fprintf(w, `[{"domain": {"id": 1, "name": "internal.example.com", "ttl": 1080, "authority_type": "M", "addressing_type": "M", "view_id": 10, "notes": "some note"}}]`)
 			},
-			parameters: globodns.ListDomainRequest{
-				Query:          "*.example.com",
-				Page:           100,
-				DomainsPerPage: 25,
-				Reverse:        func(b bool) *bool { return &b }(true),
-				View:           "all",
+			parameters: &globodns.ListDomainsParameters{
+				Query:   "*.example.com",
+				Page:    100,
+				PerPage: 25,
+				Reverse: func(b bool) *bool { return &b }(true),
+				View:    "all",
 			},
 			expected: []globodns.Domain{
 				{
@@ -106,9 +102,7 @@ func TestClient_DomainList(t *testing.T) {
 
 				require.Fail(t, "should not pass here 4 times")
 			},
-			parameters: globodns.ListDomainRequest{
-				DomainsPerPage: 1,
-			},
+			parameters: &globodns.ListDomainsParameters{PerPage: 1},
 			expected: []globodns.Domain{
 				{ID: 1, Name: "example.com", TTL: 1080},
 				{ID: 2, Name: "example.test", TTL: 1080},
