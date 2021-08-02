@@ -184,7 +184,7 @@ func (s *recordService) listAll(ctx context.Context, domainID int, p *ListRecord
 }
 
 func (s *recordService) list(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error) {
-	path := fmt.Sprintf("/domains/%d?%s", domainID, p.AsURLValues().Encode())
+	path := fmt.Sprintf("/domains/%d/records.json?%s", domainID, p.AsURLValues().Encode())
 
 	req, err := http.NewRequestWithContext(ctx, "GET", s.makeURL(path), nil)
 	if err != nil {
