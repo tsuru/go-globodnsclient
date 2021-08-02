@@ -91,7 +91,7 @@ func checkResponse(res *http.Response) error {
 		return fmt.Errorf("globodns: HTTP response cannot be nil")
 	}
 
-	if c := res.StatusCode; c <= 200 && c < 300 {
+	if c := res.StatusCode; c >= 200 && c < 300 {
 		return nil
 	}
 
