@@ -42,6 +42,7 @@ func (r *Record) GetTTL() *int {
 
 type RecordService interface {
 	Create(ctx context.Context, r Record) (*Record, error)
+	Delete(ctx context.Context, recordID int) error
 	List(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error)
 }
 
@@ -91,6 +92,26 @@ func (s *recordService) create(ctx context.Context, r Record) (*Record, error) {
 	}
 
 	return nil, fmt.Errorf("globodns: no record found")
+}
+
+func (s *recordService) Delete(ctx context.Context, recordID int) error {
+	if recordID < 0 {
+		return fmt.Errorf("globodns: record ID cannot be negative")
+	}
+
+	return s.delete(ctx, recordID)
+}
+
+func (s *recordService) delete(ctx context.Context, recordID int) error {
+	path := fmt.Sprintf("/records/%d.json", recordID)
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", s.makeURL(path), nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.Do(req, nil)
+	return err
 }
 
 type ListRecordsParameters struct {

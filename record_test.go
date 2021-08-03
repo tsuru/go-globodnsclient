@@ -254,3 +254,56 @@ func TestClient_RecordCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestClient_RecordDelete(t *testing.T) {
+	tests := map[string]struct {
+		handler       http.HandlerFunc
+		recordID      int
+		expected      *globodns.Record
+		expectedError string
+	}{
+		"record id < 0": {
+			recordID:      -10,
+			expectedError: "globodns: record ID cannot be negative",
+		},
+
+		"when server returns error": {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "DELETE", r.Method)
+				assert.Equal(t, "/records/666.json", r.URL.Path)
+
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "some error")
+			},
+			recordID:      666,
+			expectedError: `globodns: unexpected HTTP status code: Code: 500 Body: some error`,
+		},
+
+		"removing a record as expected": {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "DELETE", r.Method)
+				assert.Equal(t, "/records/1000.json", r.URL.Path)
+				w.WriteHeader(http.StatusNoContent)
+			},
+			recordID: 1000,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			client, err := globodns.New(nil, server.URL)
+			require.NoError(t, err)
+
+			err = client.Record.Delete(context.TODO(), tt.recordID)
+			if tt.expectedError != "" {
+				assert.EqualError(t, err, tt.expectedError)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}

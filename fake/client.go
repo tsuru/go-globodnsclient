@@ -36,6 +36,7 @@ var _ globodns.RecordService = &FakeRecordService{}
 
 type FakeRecordService struct {
 	FakeCreate func(ctx context.Context, r globodns.Record) (*globodns.Record, error)
+	FakeDelete func(ctx context.Context, recordID int) error
 	FakeList   func(ctx context.Context, domainID int, p *globodns.ListRecordsParameters) ([]globodns.Record, error)
 }
 
@@ -45,6 +46,14 @@ func (f *FakeRecordService) Create(ctx context.Context, r globodns.Record) (*glo
 	}
 
 	return f.FakeCreate(ctx, r)
+}
+
+func (f *FakeRecordService) Delete(ctx context.Context, recordID int) error {
+	if f.FakeDelete == nil {
+		return fmt.Errorf("fake does not implement this method")
+	}
+
+	return f.FakeDelete(ctx, recordID)
 }
 
 func (f *FakeRecordService) List(ctx context.Context, domainID int, p *globodns.ListRecordsParameters) ([]globodns.Record, error) {

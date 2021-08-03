@@ -75,6 +75,10 @@ func (c *Client) Do(req *http.Request, out interface{}) (*http.Response, error) 
 		return res, err
 	}
 
+	if out == nil {
+		return res, nil
+	}
+
 	if err = json.NewDecoder(res.Body).Decode(out); err != nil {
 		return res, fmt.Errorf("globodns: failed to decode JSON object: %w", err)
 	}
