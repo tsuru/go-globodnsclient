@@ -20,7 +20,7 @@ type Record struct {
 	Content   string     `json:"content"`
 	Name      string     `json:"name"`
 	Type      string     `json:"type"`
-	TTL       *string    `json:"ttl"`
+	TTL       *string    `json:"ttl,omitempty"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	ID        int        `json:"id,omitempty"`
@@ -44,6 +44,7 @@ type RecordService interface {
 	Create(ctx context.Context, r Record) (*Record, error)
 	Delete(ctx context.Context, recordID int) error
 	List(ctx context.Context, domainID int, p *ListRecordsParameters) ([]Record, error)
+	Update(ctx context.Context, r Record) error
 }
 
 var _ RecordService = &recordService{}
@@ -228,4 +229,31 @@ func (s *recordService) list(ctx context.Context, domainID int, p *ListRecordsPa
 	}
 
 	return records, nil
+}
+
+func (s *recordService) Update(ctx context.Context, r Record) error {
+	if r.ID < 0 {
+		return fmt.Errorf("globodns: record ID cannot be negative")
+	}
+
+	return s.update(ctx, r)
+}
+
+func (s *recordService) update(ctx context.Context, r Record) error {
+	var body bytes.Buffer
+	data := map[string]Record{"record": r}
+
+	if err := json.NewEncoder(&body).Encode(&data); err != nil {
+		return err
+	}
+
+	path := fmt.Sprintf("/records/%d.json", r.ID)
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", s.makeURL(path), &body)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.Do(req, nil)
+	return err
 }

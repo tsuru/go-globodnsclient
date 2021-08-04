@@ -307,3 +307,70 @@ func TestClient_RecordDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestClient_RecordUpdate(t *testing.T) {
+	tests := map[string]struct {
+		handler       http.HandlerFunc
+		record        globodns.Record
+		expectedError string
+	}{
+		"record id < 0": {
+			record:        globodns.Record{ID: -1},
+			expectedError: "globodns: record ID cannot be negative",
+		},
+
+		"when server returns error": {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "PUT", r.Method)
+				assert.Equal(t, "/records/666.json", r.URL.Path)
+
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "some error")
+			},
+			record:        globodns.Record{ID: 666},
+			expectedError: `globodns: unexpected HTTP status code: Code: 500 Body: some error`,
+		},
+
+		"updating record as expected": {
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "PUT", r.Method)
+				assert.Equal(t, "/records/1000.json", r.URL.Path)
+
+				data := make(map[string]interface{})
+				err := json.NewDecoder(r.Body).Decode(&data)
+				require.NoError(t, err)
+
+				assert.Equal(t, map[string]interface{}{
+					"record": map[string]interface{}{
+						"id":        float64(1000),
+						"name":      "@",
+						"content":   "169.196.255.254",
+						"type":      "A",
+						"domain_id": float64(100),
+					},
+				}, data)
+
+				w.WriteHeader(http.StatusOK)
+			},
+			record: globodns.Record{ID: 1000, Name: "@", Type: "A", Content: "169.196.255.254", DomainID: 100},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			client, err := globodns.New(nil, server.URL)
+			require.NoError(t, err)
+
+			err = client.Record.Update(context.TODO(), tt.record)
+			if tt.expectedError != "" {
+				assert.EqualError(t, err, tt.expectedError)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
