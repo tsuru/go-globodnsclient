@@ -202,15 +202,17 @@ func TestClient_RecordCreate(t *testing.T) {
 				}, data)
 
 				err = json.NewEncoder(w).Encode(map[string]interface{}{
-					"a": map[string]interface{}{
+					"record": map[string]interface{}{
 						"id":         99999,
-						"type":       "A",
 						"name":       "www.tsuru",
 						"content":    "169.196.100.100",
 						"ttl":        "3600",
 						"domain_id":  float64(100),
 						"created_at": "2021-01-01T00:00:00Z",
 						"updated_at": "2021-01-01T00:00:00Z",
+					},
+					"warnings": map[string]interface{}{
+						"content": []string{`"169.196.100.100" is not responding`},
 					},
 				})
 				require.NoError(t, err)

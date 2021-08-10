@@ -77,22 +77,22 @@ func (s *recordService) create(ctx context.Context, r Record) (*Record, error) {
 		return nil, err
 	}
 
-	var got map[string]Record
+	// NOTE: using anonymous struct to avoid problems while decoding JSON object
+	// as it may contain unmapped fields, such as "warnings" one.
+	var got struct {
+		Record *Record `json:"record"`
+	}
 
 	_, err = s.Do(req, &got)
 	if err != nil {
 		return nil, err
 	}
 
-	for rtype, r := range got {
-		if r.Type == "" {
-			r.Type = strings.ToUpper(rtype)
-		}
-
-		return &r, nil
+	if got.Record.Type == "" {
+		got.Record.Type = strings.ToUpper(r.Type)
 	}
 
-	return nil, fmt.Errorf("globodns: no record found")
+	return got.Record, nil
 }
 
 func (s *recordService) Delete(ctx context.Context, recordID int) error {
