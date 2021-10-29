@@ -20,6 +20,7 @@ type Client struct {
 	baseURL string
 	token   string
 
+	Bind   BindService
 	Domain DomainService
 	Record RecordService
 }
@@ -38,6 +39,7 @@ func New(cli *http.Client, url string) (*Client, error) {
 		baseURL: strings.TrimSuffix(url, "/"),
 	}
 
+	c.Bind = &bindService{Client: c}
 	c.Domain = &domainService{Client: c}
 	c.Record = &recordService{Client: c}
 
