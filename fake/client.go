@@ -13,9 +13,24 @@ import (
 
 func New() *globodns.Client {
 	return &globodns.Client{
+		Bind:   &FakeBindService{},
 		Domain: &FakeDomainService{},
 		Record: &FakeRecordService{},
 	}
+}
+
+var _ globodns.BindService = &FakeBindService{}
+
+type FakeBindService struct {
+	FakeExport func(ctx context.Context) (*globodns.ScheduleExport, error)
+}
+
+func (f *FakeBindService) Export(ctx context.Context) (*globodns.ScheduleExport, error) {
+	if f.FakeExport != nil {
+		return f.FakeExport(ctx)
+	}
+
+	return nil, nil
 }
 
 var _ globodns.DomainService = &FakeDomainService{}
