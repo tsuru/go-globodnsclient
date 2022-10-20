@@ -16,9 +16,10 @@ import (
 type Client struct {
 	sync.Mutex
 
-	client  *http.Client
-	baseURL string
-	token   string
+	client    *http.Client
+	baseURL   string
+	token     string
+	userAgent string
 
 	Bind   BindService
 	Domain DomainService
@@ -35,8 +36,9 @@ func New(cli *http.Client, url string) (*Client, error) {
 	}
 
 	c := &Client{
-		client:  cli,
-		baseURL: strings.TrimSuffix(url, "/"),
+		client:    cli,
+		baseURL:   strings.TrimSuffix(url, "/"),
+		userAgent: "go-globodnsclient",
 	}
 
 	c.Bind = &bindService{Client: c}
@@ -44,6 +46,10 @@ func New(cli *http.Client, url string) (*Client, error) {
 	c.Record = &recordService{Client: c}
 
 	return c, nil
+}
+
+func (c *Client) SetUserAgent(ua string) {
+	c.userAgent = ua
 }
 
 func (c *Client) SetToken(token string) {
@@ -55,6 +61,10 @@ func (c *Client) SetToken(token string) {
 func (c *Client) Do(req *http.Request, out interface{}) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("globodns: HTTP request cannot be nil")
+	}
+
+	if ua := req.Header.Get("User-Agent"); ua == "" {
+		req.Header.Set("User-Agent", c.userAgent)
 	}
 
 	req.Header.Set("Accept", "application/json")
